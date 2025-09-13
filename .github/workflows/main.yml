@@ -1,25 +1,42 @@
-
-name: Generate MD5
+name: Generate MD5 and Deploy to GitHub Pages
 
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
+      - name: Pull changes from remote
+        run: git pull
 
-      - name: Generate MD5 for committed files
+      - name: Generate MD5 for files in serve folder
         run: |
-          files=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | xargs)
-          node scripts/generate_md5.js $files
+          node scripts/generate_md5.js $(git ls-files serve)
 
       - name: Commit and push MD5 files
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "chore: generate md5 files"
           file_pattern: "*.md5"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Pull changes from remote
+        run: git pull
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./serve
