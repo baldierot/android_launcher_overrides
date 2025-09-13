@@ -1,0 +1,25 @@
+
+name: Generate MD5
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate MD5 for committed files
+        run: |
+          files=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | xargs)
+          node scripts/generate_md5.js $files
+
+      - name: Commit and push MD5 files
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: generate md5 files"
+          file_pattern: "*.md5"
